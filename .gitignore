@@ -1,0 +1,14 @@
+*.swp
+*.pyc
+.env
+config.yaml
+.python-version
+
+.idea
+__pycache__
+venv
+.venv
+.cache
+.config
+.mypy_cache
+.vscode
