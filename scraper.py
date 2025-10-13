@@ -9,6 +9,7 @@ import logging
 import pathlib
 import re
 import typing
+import zoneinfo
 
 import httpx
 from bs4 import BeautifulSoup
@@ -115,6 +116,9 @@ months = {
   'dezember': 12,
 }
 
+TIMEZONE = zoneinfo.ZoneInfo('Europe/Luxembourg')
+TODAY = datetime.datetime.now(tz=TIMEZONE).date()
+
 
 def json_encoder_date(obj: typing.Any) -> str:
   if isinstance(obj, datetime.date):
@@ -135,7 +139,7 @@ def parse_date(day: int, month_name: str, year: int) -> datetime.date | None:
   return None
 
 
-async def scrape_school_holidays_from_website() -> dict | None:
+async def scrape_school_holidays_from_website(discard_old_data: bool = True) -> dict | None:
   """Scrape school holidays from the Luxembourg government website."""
   holidays = {}
 
@@ -164,6 +168,10 @@ async def scrape_school_holidays_from_website() -> dict | None:
             end_date = parse_date(end_day, end_month, end_year)
 
             if start_date and end_date:
+              if discard_old_data and (start_date.year < TODAY.year and end_year < TODAY.year):
+                # discard events past the current year
+                continue
+
               holiday_key = (start_date, end_date)
               if holiday_key not in holidays:
                 holidays[holiday_key] = {
@@ -183,6 +191,10 @@ async def scrape_school_holidays_from_website() -> dict | None:
             end_date = parse_date(end_day, end_month, end_year)
 
             if start_date and end_date:
+              if discard_old_data and (start_date.year < TODAY.year and end_year < TODAY.year):
+                # discard events past the current year
+                continue
+
               holiday_key = (start_date, end_date)
               if holiday_key not in holidays:
                 if language_key != 'en':
@@ -209,12 +221,11 @@ async def scrape_school_holidays_from_website() -> dict | None:
   return holidays
 
 
-async def main() -> None:
-  """Main."""
-  holidays = await scrape_school_holidays_from_website()
+async def get_update_data(update_data: bool = False, discard_old_data: bool = True) -> tuple[list[dict[str, str]], int]:
+  holidays = await scrape_school_holidays_from_website(discard_old_data=discard_old_data)
   updated_entries = 0
 
-  if JSON_DUMP_PATH.is_file():
+  if JSON_DUMP_PATH.is_file() and update_data:
     with JSON_DUMP_PATH.open('r') as fhdl:
       old_data_raw = json.load(fhdl)
 
@@ -233,8 +244,15 @@ async def main() -> None:
 
   holidays_list = list(old_data.values())
 
+  return holidays_list, updated_entries
+
+
+async def main() -> None:
+  """Main."""
+  holidays, updated_entries = await get_update_data()
+
   with JSON_DUMP_PATH.open('w') as fhdl:
-    json.dump(holidays_list, fhdl, indent=2, default=json_encoder_date)
+    json.dump(holidays, fhdl, indent=2, default=json_encoder_date)
 
   print(f'Updated {updated_entries} entries')
 

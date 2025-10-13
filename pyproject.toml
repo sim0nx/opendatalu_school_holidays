@@ -5,6 +5,7 @@ requires-python = ">= 3.11"
 dependencies = [
   "httpx~=0.25",
   "beautifulsoup4~=4.12",
+  "pyyaml>=6.0.3",
 ]
 
 [dependency-groups]
