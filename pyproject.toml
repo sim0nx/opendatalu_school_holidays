@@ -3,8 +3,6 @@ name = "opendatalu_school_holidays"
 version = "1.0.0"
 requires-python = ">= 3.11"
 dependencies = [
-  "jinja2~=3.1",
-  "aiofiles~=24.1",
   "httpx~=0.25",
   "beautifulsoup4~=4.12",
 ]
@@ -15,7 +13,6 @@ dev = [
   "mypy",
   "ruff",
 ]
-
 
 [tool.mypy]
 show_error_context = true

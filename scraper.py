@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
+
+"""Scrape school holidays from https://guichet.public.lu and dump them as machine readable JSON."""
+
 import asyncio
 import datetime
-import logging
-import re
 import json
+import logging
 import pathlib
+import re
+import typing
+
 import httpx
 from bs4 import BeautifulSoup
 
@@ -12,7 +17,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
-JSON_DUMP_PATH = SCRIPT_PATH / "school_holidays.json"
+JSON_DUMP_PATH = SCRIPT_PATH / 'school_holidays.json'
 
 BASE_URL = 'https://guichet.public.lu'
 SCHOOL_CALENDAR_PATH = 'citoyens/outils/calendrier-scolaire.html'
@@ -87,7 +92,6 @@ months = {
   'april': 4,
   'avril': 4,
   'abrëll': 4,
-  'april': 4,
   'may': 5,
   'mai': 5,
   'mee': 5,
@@ -111,18 +115,21 @@ months = {
   'dezember': 12,
 }
 
-def json_encoder_date(obj) -> str:
+
+def json_encoder_date(obj: typing.Any) -> str:
   if isinstance(obj, datetime.date):
     return obj.isoformat()
 
   return obj
 
-def parse_date(day: int, month_name: str, year: int) -> str | None:
-  """Convert day, month name, and year to date string."""
+
+def parse_date(day: int, month_name: str, year: int) -> datetime.date | None:
+  """Convert day, month name, and year to date object."""
   try:
     month_num = months.get(month_name.lower())
     if month_num:
-      return f'{year}-{month_num:02d}-{int(day):02d}'
+      iso_date = f'{year}-{month_num:02d}-{int(day):02d}'
+      return datetime.date.fromisoformat(iso_date)
   except (ValueError, AttributeError):
     pass
   return None
@@ -157,12 +164,12 @@ async def scrape_school_holidays_from_website() -> dict | None:
             end_date = parse_date(end_day, end_month, end_year)
 
             if start_date and end_date:
-              holiday_key = (datetime.date.fromisoformat(start_date), datetime.date.fromisoformat(end_date))
+              holiday_key = (start_date, end_date)
               if holiday_key not in holidays:
                 holidays[holiday_key] = {
                   language_key: holiday_name,
-                  'start_date': datetime.date.fromisoformat(start_date),
-                  'end_date': datetime.date.fromisoformat(end_date),
+                  'start_date': start_date,
+                  'end_date': end_date,
                 }
               else:
                 holidays[holiday_key][language_key] = holiday_name
@@ -176,15 +183,15 @@ async def scrape_school_holidays_from_website() -> dict | None:
             end_date = parse_date(end_day, end_month, end_year)
 
             if start_date and end_date:
-              holiday_key = (datetime.date.fromisoformat(start_date), datetime.date.fromisoformat(end_date))
+              holiday_key = (start_date, end_date)
               if holiday_key not in holidays:
                 if language_key != 'en':
                   logger.warning('Probably bad data! - %s %s %s %s', language_key, holiday_name, start_date, end_date)
                 else:
                   holidays[holiday_key] = {
                     language_key: holiday_name,
-                    'start_date': datetime.date.fromisoformat(start_date),
-                    'end_date': datetime.date.fromisoformat(end_date),
+                    'start_date': start_date,
+                    'end_date': end_date,
                   }
               else:
                 holidays[holiday_key][language_key] = holiday_name
@@ -193,7 +200,7 @@ async def scrape_school_holidays_from_website() -> dict | None:
       logger.error('Error scraping school holidays from website: %s', e)
       return None
 
-  for k, v in holidays.items():
+  for _, v in holidays.items():
     for lang in LANGUAGES:
       if lang not in v:
         v[lang] = language_description_mappings[v['en']][lang]
@@ -201,7 +208,9 @@ async def scrape_school_holidays_from_website() -> dict | None:
   logger.info('Scraped %s school holidays from website', sum(len(holidays) for holidays in holidays.values()))
   return holidays
 
-async def main():
+
+async def main() -> None:
+  """Main."""
   holidays = await scrape_school_holidays_from_website()
   updated_entries = 0
 
@@ -211,7 +220,7 @@ async def main():
 
     old_data = {}
     for e in old_data_raw:
-      old_data[f'{e['start_date']}_{e['end_date']}'] = e
+      old_data[f'{e["start_date"]}_{e["end_date"]}'] = e
   else:
     old_data = {}
 
@@ -222,12 +231,13 @@ async def main():
       old_data[key] = entry
       updated_entries += 1
 
-  holidays_list = [k for k in old_data.values()]
+  holidays_list = list(old_data.values())
 
-  with open(f'school_holidays.json', 'w') as fhdl:
+  with JSON_DUMP_PATH.open('w') as fhdl:
     json.dump(holidays_list, fhdl, indent=2, default=json_encoder_date)
 
   print(f'Updated {updated_entries} entries')
+
 
 if __name__ == '__main__':
   asyncio.run(main())
