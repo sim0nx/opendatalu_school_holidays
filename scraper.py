@@ -11,7 +11,7 @@ import re
 import typing
 import zoneinfo
 
-import httpx
+import httpx2
 from bs4 import BeautifulSoup
 
 logging.basicConfig(level=logging.INFO)
@@ -69,6 +69,12 @@ language_description_mappings = {
     'fr': 'Jour férié légal le lundi de Pâques',
     'de': 'Gesetzlicher Feiertag am Ostermontag',
     'lb': 'Feierdag um Ouschterméindeg',
+  },
+  'Public holiday on New Year\'s Day': {
+    'en': 'Public holiday on New Year\'s Day',
+    'fr': 'Jour férié légal le Jour de l’an',
+    'de': 'Gesetzlicher Feiertag am Neujahrstag',
+    'lb': 'Feierdag um Neijoerschdag',
   },
 }
 
@@ -145,7 +151,7 @@ async def scrape_school_holidays_from_website(discard_old_data: bool = True) -> 
 
   for language_key, language_url in language_urls.items():
     try:
-      async with httpx.AsyncClient(follow_redirects=True) as client:
+      async with httpx2.AsyncClient(follow_redirects=True) as client:
         response = await client.get(language_url, timeout=30.0)
         response.raise_for_status()
 
@@ -208,7 +214,7 @@ async def scrape_school_holidays_from_website(discard_old_data: bool = True) -> 
               else:
                 holidays[holiday_key][language_key] = holiday_name
 
-    except (OSError, httpx.HTTPError) as e:
+    except (OSError, httpx2.HTTPError) as e:
       logger.error('Error scraping school holidays from website: %s', e)
       return None
 

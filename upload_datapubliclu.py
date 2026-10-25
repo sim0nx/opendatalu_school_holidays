@@ -8,7 +8,7 @@ import json
 import logging
 import pathlib
 
-import httpx
+import httpx2
 import yaml
 
 import scraper
@@ -34,7 +34,7 @@ async def main() -> None:
   holidays_dump = json.dumps(holidays, indent=4, default=scraper.json_encoder_date)
   holidays_dump_bio = io.BytesIO(holidays_dump.encode('utf-8'))
 
-  client = httpx.AsyncClient(headers={'X-API-KEY': api_key}, timeout=10)
+  client = httpx2.AsyncClient(headers={'X-API-KEY': api_key}, timeout=10)
 
   upload_url = f'{api_url}/datasets/{dataset_id}/resources/{resource_id}/upload/'
 
