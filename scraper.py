@@ -3,7 +3,7 @@
 """Scrape school holidays from https://guichet.public.lu and dump them as machine readable JSON."""
 
 import asyncio
-import datetime
+import datetime as dt
 import json
 import logging
 import pathlib
@@ -70,8 +70,8 @@ language_description_mappings = {
     'de': 'Gesetzlicher Feiertag am Ostermontag',
     'lb': 'Feierdag um Ouschterméindeg',
   },
-  'Public holiday on New Year\'s Day': {
-    'en': 'Public holiday on New Year\'s Day',
+  "Public holiday on New Year's Day": {
+    'en': "Public holiday on New Year's Day",
     'fr': 'Jour férié légal le Jour de l’an',
     'de': 'Gesetzlicher Feiertag am Neujahrstag',
     'lb': 'Feierdag um Neijoerschdag',
@@ -123,23 +123,23 @@ months = {
 }
 
 TIMEZONE = zoneinfo.ZoneInfo('Europe/Luxembourg')
-TODAY = datetime.datetime.now(tz=TIMEZONE).date()
+TODAY = dt.datetime.now(tz=TIMEZONE).date()
 
 
 def json_encoder_date(obj: typing.Any) -> str:
-  if isinstance(obj, datetime.date):
+  if isinstance(obj, dt.date):
     return obj.isoformat()
 
   return obj
 
 
-def parse_date(day: int, month_name: str, year: int) -> datetime.date | None:
+def parse_date(day: int, month_name: str, year: int) -> dt.date | None:
   """Convert day, month name, and year to date object."""
   try:
     month_num = months.get(month_name.lower())
     if month_num:
       iso_date = f'{year}-{month_num:02d}-{int(day):02d}'
-      return datetime.date.fromisoformat(iso_date)
+      return dt.date.fromisoformat(iso_date)
   except (ValueError, AttributeError):
     pass
   return None

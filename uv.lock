@@ -315,7 +315,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = "~=4.12" },
-    { name = "httpx2", specifier = ">=2.16.0" },
+    { name = "httpx2", specifier = "~=2.16" },
     { name = "pyyaml", specifier = ">=6.0.3" },
 ]
 
